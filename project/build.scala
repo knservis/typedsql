@@ -1,6 +1,5 @@
 import sbt._
 import Keys._
-import au.com.cba.omnia.flash._
 import au.com.cba.omnia.uniform.core.standard.StandardProjectPlugin._
 import au.com.cba.omnia.uniform.core.version.UniqueVersionPlugin._
 import au.com.cba.omnia.uniform.dependency.UniformDependencyPlugin._
@@ -141,40 +140,8 @@ object build extends Build {
               IO.copyFile(jar.data, new File(assembledJar.getParentFile, jar.data.getName))
             })
             assembledJar
-          },
-        hiveRun := {
-          import FlashPlugin.Keys._
-          val (mainClass: String, maybeArguments: Option[String]) = FlashPlugin.ParseClassAndArguments.parsed
-          val arguments = maybeArguments.getOrElse("")
-          val thinJar = (assembly in FlashPlugin.ThinJar).value
-
-          // Use the username to make this location unique.
-          val username = System.getProperty("user.name")
-
-          def hiveRunCommand(dependenciesJarPath: String, projectJarPath: String, mainClass: String, arguments: String = "") = List(
-            s"HADOOP_CLASSPATH=/etc/hive/conf.dist:${projectJarPath}:${dependenciesJarPath}:$${HADOOP_CLASSPATH} hadoop jar ${projectJarPath} ${mainClass} -libjars ${projectJarPath},${dependenciesJarPath} ${arguments}"
-          )
-
-          Flash.runRemotely(
-            streams.value.log,
-            remotingSupport.value,
-            remoteDirectories.value.globalTempDirectory,
-            remoteDirectories.value.invocationTempDirectory(username),
-            (shared, temp) => hiveRunCommand(
-                shared + "/" + cachedDependencies.value.name,
-                temp + "/" + thinJar.name,
-                mainClass,
-                arguments
-              ),
-            Map(
-              "Dependencies Jar" -> cachedDependencies.value
-            ),
-            Map(
-              "Project Jar"      -> thinJar
-            )
-          )
-        }
-      )
+          }
+        )
   ) dependsOn(macros, test % "test->compile")
 
   lazy val test = Project(
